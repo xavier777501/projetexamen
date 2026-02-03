@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import './App.css';
 
 function App() {
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
   const [currentView, setCurrentView] = useState('home'); // 'home', 'add-purchase', 'history', 'stats'
   const [purchases, setPurchases] = useState([]);
   const [topProducts, setTopProducts] = useState([]);
@@ -34,7 +35,7 @@ function App() {
 
   const fetchTotalExpenses = async () => {
     try {
-      const response = await fetch('http://localhost:8000/stats/total-expenses');
+      const response = await fetch(`${API_URL}/stats/total-expenses`);
       const data = await response.json();
       if (response.ok) {
         setTotalExpenses(data.total || 0);
@@ -46,7 +47,7 @@ function App() {
 
   const fetchTopProduct = async () => {
     try {
-      let url = 'http://localhost:8000/stats/top-product';
+      let url = `${API_URL}/stats/top-product`;
       const params = new URLSearchParams();
       if (statsPeriod.start_date) params.append('start_date', statsPeriod.start_date);
       if (statsPeriod.end_date) params.append('end_date', statsPeriod.end_date);
@@ -67,7 +68,7 @@ function App() {
 
   const fetchPurchases = async () => {
     try {
-      const response = await fetch('http://localhost:8000/purchases');
+      const response = await fetch(`${API_URL}/purchases`);
       const data = await response.json();
       if (response.ok) {
         setPurchases(data);
@@ -96,7 +97,7 @@ function App() {
     if (!validate()) return;
 
     try {
-      const response = await fetch('http://localhost:8000/purchases', {
+      const response = await fetch(`${API_URL}/purchases`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
