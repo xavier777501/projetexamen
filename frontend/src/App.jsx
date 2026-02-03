@@ -2,8 +2,14 @@ import React, { useState, useEffect } from 'react';
 import './App.css';
 
 function App() {
-  const [currentView, setCurrentView] = useState('home'); // 'home', 'add-purchase', 'history'
+  const [currentView, setCurrentView] = useState('home'); // 'home', 'add-purchase', 'history', 'stats'
   const [purchases, setPurchases] = useState([]);
+  const [topProducts, setTopProducts] = useState([]);
+  const [statsPeriod, setStatsPeriod] = useState({
+    start_date: '',
+    end_date: ''
+  });
+  const [statsMessage, setStatsMessage] = useState('');
   const [formData, setFormData] = useState({
     product_name: '',
     price: '',
@@ -17,7 +23,31 @@ function App() {
     if (currentView === 'history') {
       fetchPurchases();
     }
+    if (currentView === 'stats') {
+      fetchTopProduct();
+    }
   }, [currentView]);
+
+  const fetchTopProduct = async () => {
+    try {
+      let url = 'http://localhost:8000/stats/top-product';
+      const params = new URLSearchParams();
+      if (statsPeriod.start_date) params.append('start_date', statsPeriod.start_date);
+      if (statsPeriod.end_date) params.append('end_date', statsPeriod.end_date);
+      
+      if (params.toString()) url += `?${params.toString()}`;
+      
+      const response = await fetch(url);
+      const data = await response.json();
+      
+      if (response.ok) {
+        setTopProducts(data.top_products || []);
+        setStatsMessage(data.message || '');
+      }
+    } catch (err) {
+      console.error("Erreur stats:", err);
+    }
+  };
 
   const fetchPurchases = async () => {
     try {
@@ -104,7 +134,7 @@ function App() {
           <p>Consultez vos achats passés</p>
         </div>
         
-        <div className="action-card disabled">
+        <div className="action-card" onClick={() => setCurrentView('stats')}>
           <div className="icon-box">📊</div>
           <h3>Statistiques</h3>
           <p>Analysez vos habitudes</p>
@@ -212,12 +242,72 @@ function App() {
     </div>
   );
 
+  const renderStats = () => (
+    <div className="stats-container">
+      <div className="header-row">
+        <button className="btn-back" onClick={() => {
+          setCurrentView('home');
+          setStatsPeriod({ start_date: '', end_date: '' });
+          setTopProducts([]);
+          setStatsMessage('');
+        }}>← Retour</button>
+        <h2>Statistiques d'Achat</h2>
+      </div>
+
+      <div className="filter-panel glass-panel">
+        <h3>Filtrer par période</h3>
+        <div className="filter-grid">
+          <div className="form-group">
+            <label>Date de début</label>
+            <input 
+              type="date" 
+              value={statsPeriod.start_date}
+              onChange={(e) => setStatsPeriod({...statsPeriod, start_date: e.target.value})}
+            />
+          </div>
+          <div className="form-group">
+            <label>Date de fin</label>
+            <input 
+              type="date" 
+              value={statsPeriod.end_date}
+              onChange={(e) => setStatsPeriod({...statsPeriod, end_date: e.target.value})}
+            />
+          </div>
+          <button className="btn-submit" onClick={fetchTopProduct}>Calculer</button>
+        </div>
+      </div>
+
+      <div className="stats-results">
+        <div className="stat-card glass-panel">
+          <div className="icon-box large">🏆</div>
+          <h3>Produit le plus acheté</h3>
+          
+          {statsMessage ? (
+            <p className="empty-message">{statsMessage}</p>
+          ) : topProducts.length > 0 ? (
+            <div className="top-products-list">
+              {topProducts.map((p, idx) => (
+                <div key={idx} className="top-product-item">
+                  <span className="product-name">{p.name}</span>
+                  <span className="product-count">{p.count} fois</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="info-message">Choisissez une période pour voir le top produit.</p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <div className="app-wrapper">
       <div className="glass-panel">
         {currentView === 'home' && renderHome()}
         {currentView === 'add-purchase' && renderAddPurchase()}
         {currentView === 'history' && renderHistory()}
+        {currentView === 'stats' && renderStats()}
       </div>
     </div>
   );

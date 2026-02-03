@@ -1,8 +1,9 @@
 from fastapi import FastAPI, Depends, HTTPException, status
-from sqlalchemy import text
+from sqlalchemy import text, and_
 from sqlalchemy.orm import Session
-import models, database, schemas
-from typing import List
+import models, database, schemas, utils
+from typing import List, Optional
+from datetime import date
 
 # Création des tables dans la base de données
 models.Base.metadata.create_all(bind=database.engine)
@@ -65,6 +66,35 @@ def get_purchases(db: Session = Depends(database.get_db)):
     ).join(models.Product).order_by(models.Purchase.purchase_date.desc()).all()
     
     return purchases
+
+@app.get("/stats/top-product")
+def get_top_product(
+    start_date: Optional[date] = None, 
+    end_date: Optional[date] = None, 
+    db: Session = Depends(database.get_db)
+):
+    query = db.query(models.Product.name).join(models.Purchase)
+    
+    filters = []
+    if start_date:
+        filters.append(models.Purchase.purchase_date >= start_date)
+    if end_date:
+        filters.append(models.Purchase.purchase_date <= end_date)
+        
+    if filters:
+        query = query.filter(and_(*filters))
+        
+    product_names = [row[0] for row in query.all()]
+    
+    top_products = utils.get_most_frequent_products(product_names)
+    
+    if not top_products:
+        return {"message": "Aucun produit acheté dans cette période", "top_products": []}
+        
+    return {
+        "period": {"start": start_date, "end": end_date},
+        "top_products": top_products
+    }
 
 # Endpoint de test pour vérifier la connexion DB
 @app.get("/db-check")
