@@ -53,6 +53,19 @@ def create_purchase(purchase: schemas.PurchaseCreate, db: Session = Depends(data
         "purchase_date": new_purchase.purchase_date
     }
 
+@app.get("/purchases", response_model=List[schemas.PurchaseResponse])
+def get_purchases(db: Session = Depends(database.get_db)):
+    # Jointure pour récupérer le nom du produit et tri par date décroissante
+    purchases = db.query(
+        models.Purchase.id,
+        models.Purchase.product_id,
+        models.Product.name.label("product_name"),
+        models.Purchase.price,
+        models.Purchase.purchase_date
+    ).join(models.Product).order_by(models.Purchase.purchase_date.desc()).all()
+    
+    return purchases
+
 # Endpoint de test pour vérifier la connexion DB
 @app.get("/db-check")
 def check_db(db: Session = Depends(database.get_db)):

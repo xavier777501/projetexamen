@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import './App.css';
 
 function App() {
-  const [currentView, setCurrentView] = useState('home'); // 'home', 'add-purchase'
+  const [currentView, setCurrentView] = useState('home'); // 'home', 'add-purchase', 'history'
+  const [purchases, setPurchases] = useState([]);
   const [formData, setFormData] = useState({
     product_name: '',
     price: '',
@@ -10,6 +11,25 @@ function App() {
   });
   const [message, setMessage] = useState({ type: '', text: '' });
   const [errors, setErrors] = useState({});
+
+  // Charger les achats quand on va sur la vue historique
+  useEffect(() => {
+    if (currentView === 'history') {
+      fetchPurchases();
+    }
+  }, [currentView]);
+
+  const fetchPurchases = async () => {
+    try {
+      const response = await fetch('http://localhost:8000/purchases');
+      const data = await response.json();
+      if (response.ok) {
+        setPurchases(data);
+      }
+    } catch (err) {
+      console.error("Erreur chargement achats:", err);
+    }
+  };
 
   const validate = () => {
     const newErrors = {};
@@ -78,7 +98,7 @@ function App() {
           <p>Enregistrez vos nouvelles dépenses</p>
         </div>
         
-        <div className="action-card disabled">
+        <div className="action-card" onClick={() => setCurrentView('history')}>
           <div className="icon-box">📜</div>
           <h3>Historique</h3>
           <p>Consultez vos achats passés</p>
@@ -158,11 +178,46 @@ function App() {
     </div>
   );
 
+  const renderHistory = () => (
+    <div className="history-container">
+      <div className="header-row">
+        <button className="btn-back" onClick={() => setCurrentView('home')}>← Retour</button>
+        <h2>Historique des Achats</h2>
+      </div>
+
+      <div className="history-table-container">
+        {purchases.length === 0 ? (
+          <p className="empty-message">Aucun achat pour le moment.</p>
+        ) : (
+          <table>
+            <thead>
+              <tr>
+                <th>Produit</th>
+                <th>Prix</th>
+                <th>Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              {purchases.map((purchase) => (
+                <tr key={purchase.id}>
+                  <td>{purchase.product_name}</td>
+                  <td className="price-cell">{purchase.price.toFixed(2)} €</td>
+                  <td className="date-cell">{new Date(purchase.purchase_date).toLocaleDateString('fr-FR')}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </div>
+  );
+
   return (
     <div className="app-wrapper">
       <div className="glass-panel">
         {currentView === 'home' && renderHome()}
         {currentView === 'add-purchase' && renderAddPurchase()}
+        {currentView === 'history' && renderHistory()}
       </div>
     </div>
   );
