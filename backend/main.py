@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Depends, HTTPException, status
-from sqlalchemy import text, and_
+from sqlalchemy import text, and_, func
 from sqlalchemy.orm import Session
 import models, database, schemas, utils
 from typing import List, Optional
@@ -94,6 +94,30 @@ def get_top_product(
     return {
         "period": {"start": start_date, "end": end_date},
         "top_products": top_products
+    }
+
+@app.get("/stats/total-expenses")
+def get_total_expenses(
+    start_date: Optional[date] = None, 
+    end_date: Optional[date] = None, 
+    db: Session = Depends(database.get_db)
+):
+    query = db.query(func.sum(models.Purchase.price))
+    
+    filters = []
+    if start_date:
+        filters.append(models.Purchase.purchase_date >= start_date)
+    if end_date:
+        filters.append(models.Purchase.purchase_date <= end_date)
+        
+    if filters:
+        query = query.filter(and_(*filters))
+        
+    total = query.scalar() or 0.0
+    
+    return {
+        "period": {"start": start_date, "end": end_date},
+        "total": float(total)
     }
 
 # Endpoint de test pour vérifier la connexion DB

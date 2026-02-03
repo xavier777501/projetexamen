@@ -220,8 +220,26 @@ tr:hover {
 }
 
 .price-cell {
-  font-weight: 600;
-  color: #86efac;
+  font-weight: 700;
+  color: #93c5fd;
+}
+
+.total-row {
+  background: rgba(255, 255, 255, 0.15);
+  font-weight: 800;
+  border-top: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+.total-row td {
+  color: #fff;
+  font-size: 1.1rem;
+}
+
+.budget-value {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: #93c5fd;
+  margin: 0.5rem 0;
 }
 
 .date-cell {

@@ -5,6 +5,7 @@ function App() {
   const [currentView, setCurrentView] = useState('home'); // 'home', 'add-purchase', 'history', 'stats'
   const [purchases, setPurchases] = useState([]);
   const [topProducts, setTopProducts] = useState([]);
+  const [totalExpenses, setTotalExpenses] = useState(0);
   const [statsPeriod, setStatsPeriod] = useState({
     start_date: '',
     end_date: ''
@@ -20,6 +21,9 @@ function App() {
 
   // Charger les achats quand on va sur la vue historique
   useEffect(() => {
+    if (currentView === 'home') {
+      fetchTotalExpenses();
+    }
     if (currentView === 'history') {
       fetchPurchases();
     }
@@ -27,6 +31,18 @@ function App() {
       fetchTopProduct();
     }
   }, [currentView]);
+
+  const fetchTotalExpenses = async () => {
+    try {
+      const response = await fetch('http://localhost:8000/stats/total-expenses');
+      const data = await response.json();
+      if (response.ok) {
+        setTotalExpenses(data.total || 0);
+      }
+    } catch (err) {
+      console.error("Erreur total dépenses:", err);
+    }
+  };
 
   const fetchTopProduct = async () => {
     try {
@@ -140,10 +156,11 @@ function App() {
           <p>Analysez vos habitudes</p>
         </div>
         
-        <div className="action-card disabled">
+        <div className="action-card" onClick={() => setCurrentView('history')}>
           <div className="icon-box">💰</div>
           <h3>Budget</h3>
-          <p>Suivez vos dépenses totales</p>
+          <p className="budget-value">{totalExpenses.toFixed(2)} €</p>
+          <p>Total de vos dépenses</p>
         </div>
       </div>
     </div>
@@ -236,6 +253,15 @@ function App() {
                 </tr>
               ))}
             </tbody>
+            <tfoot>
+              <tr className="total-row">
+                <td>Total</td>
+                <td className="price-cell">
+                  {purchases.reduce((sum, p) => sum + p.price, 0).toFixed(2)} €
+                </td>
+                <td></td>
+              </tr>
+            </tfoot>
           </table>
         )}
       </div>
